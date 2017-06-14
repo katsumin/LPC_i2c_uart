@@ -40,11 +40,6 @@
 #include "lpc8xx_nmi.h"
 #include "lpc8xx_uart.h"
 
-/* All these variables, mostly used for debugging only, are shared by all UARTs 
-now for easy debugging. So only one UART can run at a time. They should be rewritten
-when we release the software to the public. */
-//volatile uint32_t UARTStatus;
-//volatile uint8_t  UARTTxEmpty = 1;
 typedef struct {
 	uint8_t txBuffer[BUFSIZE];
 	uint8_t rxBuffer[BUFSIZE];
@@ -56,20 +51,7 @@ typedef struct {
 
 volatile UART_CONTEXT uartContext[2]; // 0:コマンド、1:データ
 
-//volatile uint8_t  UARTTxBuffer[BUFSIZE];
-//volatile uint8_t  UARTRxBuffer[BUFSIZE];
-//volatile uint32_t UARTTxCount = 0;
-//volatile uint32_t UARTRxCount = 0;
-//volatile uint32_t UARTRxReadPointer = 0;
-//volatile uint32_t UARTRxWritePointer = 0;
-//volatile uint32_t RxErrorCount = 0;
-//volatile uint32_t TxErrorCount = 0;
 volatile uint32_t UARTRxRdyCount = 0;
-//volatile uint32_t ParityErrorCount = 0;
-//volatile uint32_t UARTBlockReceived = 0;
-//volatile uint32_t UARTBlockTransmitted = 0;
-//volatile uint32_t AddrDetected = 0;
-
 volatile uint32_t UARTInterruptCount = 0;
 
 #if FLOWCTRL_ENABLE
@@ -168,10 +150,6 @@ void UART_Handler( LPC_USART_TypeDef *UARTx, int ch )
 	{
 		/* Receive Data Available */
 #if 1
-//		if ( ((regVal=UARTx->RXDATA) & 0x100) && (UARTx->CTRL & ADDR_DET) )
-//		{
-//			AddrDetected = regVal & 0x1FF;
-//		}
 		regVal = UARTx->RXDATA;
 		UART_SetRxData(ch, regVal);
 #if HALF_DUPLEX
@@ -203,7 +181,6 @@ void UART_Handler( LPC_USART_TypeDef *UARTx, int ch )
 		int data = UART_GetTxData(ch);
 		if ( data != -1 ) {
 			UARTx->TXDATA = data;
-//			UARTTxEmpty = 1;
 		}
 		UARTx->INTENCLR = TXRDY;
 	}
@@ -292,39 +269,6 @@ int UART_GetRxCount(int ch){
 	}
 	return count;
 }
-
-//void UART_SetRxData(uint8_t data){
-//	int count = UART_GetRxCount();
-//	if ( count < BUFSIZE ) {
-//		UARTRxBuffer[UARTRxWritePointer++] = data;
-//		if ( UARTRxWritePointer >= BUFSIZE ) {
-//			UARTRxWritePointer = 0;		/* buffer overflow */
-//		}
-////	} else {
-////		volatile int a = count;
-//	}
-//}
-//
-//int UART_GetRxData(){
-//	int data = -1;
-//	if ( UARTRxReadPointer != UARTRxWritePointer ) {
-//		data = UARTRxBuffer[UARTRxReadPointer++];
-//		if ( UARTRxReadPointer >= BUFSIZE ) {
-//			UARTRxReadPointer = 0;
-//		}
-//	}
-//
-//	return data;
-//}
-//
-//int UART_GetRxCount(){
-//	int count = UARTRxWritePointer - UARTRxReadPointer;
-//	if ( count < 0 ) {
-//		count += BUFSIZE;
-//	}
-//
-//	return count;
-//}
 
 /*****************************************************************************
 ** Function name:		UART0_IRQHandler
@@ -448,8 +392,6 @@ void UARTInit(LPC_USART_TypeDef *UARTx, uint32_t baudrate)
 {
 	uint32_t UARTSysClk;
 		
-//  UARTTxEmpty = 1;
-	
 	UARTClock_Init( UARTx );
 	
 	UARTSysClk = SystemCoreClock/LPC_SYSCON->UARTCLKDIV;
@@ -543,134 +485,6 @@ void UARTInit(LPC_USART_TypeDef *UARTx, uint32_t baudrate)
   UARTx->CFG |= UART_EN; 
   return;
 }
-
-///*****************************************************************************
-//** Function name:		UARTSend
-//**
-//** Descriptions:		Send a block of data to the UART 0 port based
-//**						on the data length
-//**
-//** parameters:			buffer pointer, and data length
-//** Returned value:		None
-//**
-//*****************************************************************************/
-//void UARTSend(LPC_USART_TypeDef *UARTx, uint8_t *BufferPtr, uint32_t Length)
-//{
-//#if ADDR_DETECT_EN
-//  uint32_t flag = 0;
-//#endif
-//
-//  while ( Length != 0 )
-//  {
-//#if !TX_INTERRUPT
-//	  while ( !(UARTx->STAT & TXRDY) );
-//#if ADDR_DETECT_EN
-//	  if ( flag == 0 )
-//	  {
-//			/* In the first byte, set 9th bit to 1 for address detection. */
-//			UARTx->TXDATA = *BufferPtr|0x100;
-//			flag = 1;
-//	  }
-//	  else
-//	  {
-//			UARTx->TXDATA = *BufferPtr;
-//	  }
-//#else
-//	  UARTx->TXDATA = *BufferPtr;
-//#endif
-//#else
-//	  /* Below flag is set inside the interrupt handler when TXRDY is set. */
-//    while ( !(UARTTxEmpty & 0x01) );
-//#if ADDR_DETECT_EN
-//	  if ( flag == 0 )
-//	  {
-//			/* In the first byte, set 9th bit to 1 for address detection. */
-//			UARTx->TXDATA = *BufferPtr|0x100;
-//			flag = 1;
-//	  }
-//	  else
-//	  {
-//			UARTx->TXDATA = *BufferPtr;
-//	  }
-//#else
-//	  UARTx->TXDATA = *BufferPtr;
-//#endif
-//    UARTTxEmpty = 0;	/* reset the flag after data is written to the TXDATA */
-//	  UARTx->INTENSET = TXRDY;
-//#endif
-//    BufferPtr++;
-//    Length--;
-//  }
-//  return;
-//}
-
-///*****************************************************************************
-//** Function name:		USARTInit
-//**
-//** Descriptions:		Initialize USART port, setup pin select,
-//**						clock, parity, stop bits, FIFO, etc.
-//**
-//** parameters:			mode: master(1) or slave(0), UART baudrate
-//** Returned value:		None
-//**
-//*****************************************************************************/
-//void USARTInit(LPC_USART_TypeDef *UARTx, uint32_t baudrate, uint32_t mode)
-//{
-//  UARTTxEmpty = 1;
-//  NVIC_DisableIRQ(UART0_IRQn);
-//
-//	UARTClock_Init( UARTx );
-//
-//  UARTx->CFG = DATA_LENG_8|PARITY_NONE|STOP_BIT_1; /* 8 bits, no Parity, 1 Stop bit */
-////  UARTx->CFG = DATA_LENG_7|PARITY_NONE|STOP_BIT_1; /* 7 bits, no Parity, 1 Stop bit */
-////  UARTx->CFG = DATA_LENG_8|PARITY_NONE|STOP_BIT_2; /* 8 bits, no Parity, 2 Stop bit */
-////  UARTx->CFG = DATA_LENG_8|PARITY_EVEN|STOP_BIT_1; /* 8 bits, even Parity, 1 Stop bit */
-////  UARTx->CFG = DATA_LENG_8|PARITY_ODD|STOP_BIT_1; /* 8 bits, odd Parity, 1 Stop bit */
-//
-//  UARTx->BRG = (SystemCoreClock/LPC_SYSCON->UARTCLKDIV)/baudrate-1;	/*baud rate */
-//  UARTx->STAT = CTS_DELTA | DELTA_RXBRK;		/* Clear all status bits. */
-//
-//  UARTx->CFG |= SYNC_EN;
-//  if ( mode != 0 )
-//  {
-//		UARTx->CFG |= SYNC_MS;
-//  }
-//  else
-//  {
-//		UARTx->CFG &= ~SYNC_MS;
-//  }
-//
-//#if HALF_DUPLEX
-//	UARTx->CTRL |= ( CC | CCCLR );
-//#else
-//#if 0
-//  UARTx->CTRL |= CC;
-//#endif
-//#if 0
-//  UARTx->CTRL |= CCCLR;
-//#endif
-//#endif
-//#if 0
-//  UARTx->CFG |= CLK_POL;
-//#endif
-//
-//  /* Enable the UART Interrupt */
-//  NVIC_EnableIRQ(UART0_IRQn);
-//
-//#if TX_INTERRUPT
-//  UARTx->INTENSET = RXRDY | TXRDY;	/* Enable UART interrupt */
-//#else
-//  UARTx->INTENSET = RXRDY;
-//  UARTx->INTENCLR = TXRDY;
-//#endif
-//
-//#if ERROR_INTERRUPT
-//  UARTx->INTENSET = (FRM_ERR|OVRN_ERR|PAR_ERR|RXNOISE);
-//#endif
-//
-//  UARTx->CFG |= UART_EN;	/* Deassert RESET, UART is in operation. */
-//  return;
-//}
 
 /******************************************************************************
 **                            End Of File

@@ -20,19 +20,11 @@
 #include "lpc8xx_uart.h"
 
 // TODO: insert other definitions and declarations here
-//volatile uint8_t I2CSlaveTXBuffer[2][I2C_BUFSIZE];
-//volatile uint8_t I2CSlaveRXBuffer[2][I2C_BUFSIZE];
-//volatile uint32_t I2CMonBuffer[I2C_MONBUFSIZE];
-//volatile uint32_t I2CReadLength, I2CWriteLength;
-//volatile uint32_t UARTLoopbackCount = 0;
 extern void SwitchMatrix_Init();
 extern volatile uint32_t UARTRxCount;
 extern volatile uint8_t UARTRxBuffer[BUFSIZE];
 
 int main(void) {
-    // Force the counter to be placed into memory
-//    volatile static int i = 0 ;
-
     // TODO: insert code here
     SystemCoreClockUpdate();
 	SwitchMatrix_Init();
@@ -43,8 +35,6 @@ int main(void) {
 	LPC_SYSCON->PRESETCTRL &= ~(0x1<<6);
 	LPC_SYSCON->PRESETCTRL |= (0x1<<6);
 
-//	UARTInit(LPC_USART1, 9600);
-
 	I2C_SlvInit(LPC_I2C, SLAVE_ADDR, CFG_SLVENA, I2C_FMODE_PRE_DIV);
 	/* Ready to receive the slave address, interrupt(SLAVE ADDR STATE) if match occurs. */
     LPC_I2C->SLVCTL = CTL_SLVCONTINUE;
@@ -54,12 +44,6 @@ int main(void) {
     I2C_MstInit(LPC_I2C, I2C_FMODE_PRE_DIV, CFG_MSTENA, 0x00);
 
     /* Get device ID register */
-//    for ( i = 0; i < I2C_BUFSIZE; i++ )	/* clear buffer */
-//    {
-//  		I2CSlaveTXBuffer[i] = 0;
-//  		I2CSlaveRXBuffer[i] = 0;
-//    }
-
     I2C_CheckIdle(LPC_I2C);
 
     // Enter an infinite loop, just incrementing a counter
