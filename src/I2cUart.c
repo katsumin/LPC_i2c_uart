@@ -1,6 +1,6 @@
 /*
 ===============================================================================
- Name        : LineCapI2c.c
+ Name        : I2cUart.c
  Author      : $(author)
  Version     :
  Copyright   : $(copyright)
